@@ -1,30 +1,25 @@
 from airflow import DAG
-from airflow.contrib.operators.kubernetes_pod_operator import KubernetesPodOperator
-from datetime import datetime
+from airflow.providers.cncf.kubernetes.operators.kubernetes_pod import KubernetesPodOperator
 import os
+from datetime import datetime
 
-default_args = {
-    'owner': 'airflow',
-    'start_date': datetime(2024, 6, 25),
-}
+# Define the DAG
+with DAG(
+    dag_id="kpo_os_env_example",
+    start_date=datetime(2024, 6, 25), 
+    schedule_interval=None, 
+    catchup=False
+) as dag:
 
-dag = DAG('kpo_test_dag', default_args=default_args, schedule_interval=None)
+    # Fetch the image name from OS environment variable
+    image_name = os.environ.get("KPO_IMAGE", "default-image:latest")
 
-# Retrieve the image from the environment variable
-kpo_image = os.environ.get('KPO_IMAGE', 'python:3.9-slim')
-
-kpo_task = KubernetesPodOperator(
-    task_id='kpo_test_task',
-    name='kpo_test_task',
-    namespace='default',
-    image=kpo_image,
-    cmds=["/bin/bash", "-c"],
-    arguments=[
-        "echo 'Hello from KubernetesPodOperator! Using image: " + kpo_image + "' && "
-        "echo 'Waiting for 5 minutes...' && "
-        "sleep 300 && "
-        "echo 'Done waiting. Exiting now.'"
-    ],
-    dag=dag,
-    get_logs=True,
-)
+    # Define the KubernetesPodOperator task
+    kpo_task = KubernetesPodOperator(
+        task_id="my_kpo_task",
+        name="my-pod",
+        namespace="default",  
+        image=image_name, 
+        cmds=["echo", "Hello from Kubernetes Pod!"],  
+        # ... other KubernetesPodOperator configuration 
+    )
