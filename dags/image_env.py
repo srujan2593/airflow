@@ -18,7 +18,7 @@ with DAG(
     kpo_task = KubernetesPodOperator(
         task_id="my_kpo_task",
         name="my-pod",
-        namespace="default",  
+        namespace="airflow-cluster",  
         image=image_name, 
         cmds=["echo", "Hello from Kubernetes Pod!"],  
         # ... other KubernetesPodOperator configuration 
