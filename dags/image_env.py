@@ -10,16 +10,21 @@ with DAG(
     schedule_interval=None, 
     catchup=False
 ) as dag:
-
     # Fetch the image name from OS environment variable
     image_name = os.getenv("KPO_IMAGE", "default-image:latest")
-
+    
     # Define the KubernetesPodOperator task
     kpo_task = KubernetesPodOperator(
         task_id="my_kpo_task",
         name="my-pod",
         namespace="airflow-cluster",  
         image=image_name, 
-        cmds=["echo", "Hello from Kubernetes Pod!", "sleep", "600"],  
-        # ... other KubernetesPodOperator configuration 
+        cmds=["/bin/bash", "-c"],
+        arguments=[
+            "echo 'Hello from Kubernetes Pod!' && "
+            "echo 'Waiting for 5 minutes...' && "
+            "sleep 300 && "
+            "echo 'Wait time over. Exiting.'"
+        ],
+        get_logs=True,
     )
