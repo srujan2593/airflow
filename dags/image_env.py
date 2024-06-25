@@ -19,5 +19,5 @@ with DAG(
         name="my-pod",
         namespace="airflow-cluster",  
         image=image_name, 
-        cmds=["sleep", "300"],
+        cmds=["sleep", "10"],
     )
