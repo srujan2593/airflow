@@ -19,12 +19,5 @@ with DAG(
         name="my-pod",
         namespace="airflow-cluster",  
         image=image_name, 
-        cmds=["/bin/bash", "-c"],
-        arguments=[
-            "echo 'Hello from Kubernetes Pod!' && "
-            "echo 'Waiting for 5 minutes...' && "
-            "sleep 300 && "
-            "echo 'Wait time over. Exiting.'"
-        ],
-        get_logs=True,
+        cmds=["echo", "Hello from Kubernetes Pod!"],
     )
