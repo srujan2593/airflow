@@ -12,7 +12,7 @@ with DAG(
 ) as dag:
 
     # Fetch the image name from OS environment variable
-    image_name = os.environ.get("KPO_IMAGE", "default-image:latest")
+    image_name = os.getenv("KPO_IMAGE", "default-image:latest")
 
     # Define the KubernetesPodOperator task
     kpo_task = KubernetesPodOperator(
@@ -20,6 +20,6 @@ with DAG(
         name="my-pod",
         namespace="airflow-cluster",  
         image=image_name, 
-        cmds=["echo", "Hello from Kubernetes Pod!"],  
+        cmds=["echo", "Hello from Kubernetes Pod!", "sleep", "600"],  
         # ... other KubernetesPodOperator configuration 
     )
