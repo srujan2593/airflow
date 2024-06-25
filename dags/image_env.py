@@ -19,5 +19,5 @@ with DAG(
         name="my-pod",
         namespace="airflow-cluster",  
         image=image_name, 
-        cmds=["echo", "Hello from Kubernetes Pod!"],
+        cmds=["sleep", "300"],
     )
