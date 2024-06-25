@@ -11,7 +11,7 @@ with DAG(
     catchup=False
 ) as dag:
     # Fetch the image name from OS environment variable
-    image_name = os.getenv("KPO_IMAGE", "default-image:latest")
+    image_name = os.getenv("KPO_IMAGEE", "python:3.9-slim")
     
     # Define the KubernetesPodOperator task
     kpo_task = KubernetesPodOperator(
