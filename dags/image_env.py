@@ -18,8 +18,13 @@ kpo_task = KubernetesPodOperator(
     name='kpo_test_task',
     namespace='default',
     image=kpo_image,
-    cmds=["python", "-c"],
-    arguments=["print('Hello from KubernetesPodOperator! Using image: ' + '" + kpo_image + "')"],
+    cmds=["/bin/bash", "-c"],
+    arguments=[
+        "echo 'Hello from KubernetesPodOperator! Using image: " + kpo_image + "' && "
+        "echo 'Waiting for 5 minutes...' && "
+        "sleep 300 && "
+        "echo 'Done waiting. Exiting now.'"
+    ],
     dag=dag,
     get_logs=True,
 )
