@@ -3,11 +3,6 @@ name: Automated Tagging and Deployment
 # Trigger only for manual workflow dispatch
 on:
   workflow_dispatch:
-    inputs:
-      branch_name:
-        description: 'Branch name for the tag'
-        required: true
-        default: 'main'
 
 # Set permissions to allow pushing tags
 permissions:
@@ -28,8 +23,11 @@ jobs:
         run: |
           # Get the current timestamp in YYYYMMDD-HHMMSS format
           TIMESTAMP=$(date +'%Y%m%d-%H%M%S')
-          # Get branch name from the manual input
-          BRANCH_NAME="${{ github.event.inputs.branch_name }}"
+          # Extract branch name from GITHUB_REF (removing refs/heads/)
+          BRANCH_NAME="${GITHUB_REF#refs/heads/}"
+          if [[ -z "$BRANCH_NAME" ]]; then
+            BRANCH_NAME="manual"
+          fi
           # Format the tag with date-time and branch name
           echo "IMAGE_TAG=${TIMESTAMP}-${BRANCH_NAME}" >> $GITHUB_ENV
 
