@@ -1,5 +1,6 @@
 name: Automated Tagging and Deployment
 
+# Trigger on push to main, pull requests, and manual dispatch
 on:
   push:
     branches:
@@ -7,9 +8,15 @@ on:
   pull_request:
     branches:
       - main
-  release:
-    types: [published]
   workflow_dispatch:
+    inputs:
+      version_type:
+        description: 'Version type to bump (major, minor, patch)'
+        required: true
+        default: 'patch'
+      pre_release_type:
+        description: 'Pre-release type (alpha, beta, rc). Leave blank for stable release.'
+        required: false
 
 permissions:
   contents: write  # Allows pushing tags to the repository
@@ -17,7 +24,7 @@ permissions:
 jobs:
   create-tag-and-deploy:
     runs-on: ubuntu-latest
-    
+
     steps:
       # Step 1: Checkout code and fetch all tags
       - name: Checkout code
@@ -47,8 +54,8 @@ jobs:
             echo "CURRENT_VERSION=${TAG}" >> $GITHUB_ENV
           fi
 
-      # Step 3: Bump version based on event type
-      - name: Bump version based on event
+      # Step 3: Bump version based on event type or manual input
+      - name: Bump version based on event or input
         id: bump_version
         shell: bash
         run: |
@@ -56,19 +63,31 @@ jobs:
           MINOR=$(echo "${{ env.CURRENT_VERSION }}" | cut -d'.' -f2)
           PATCH=$(echo "${{ env.CURRENT_VERSION }}" | cut -d'.' -f3)
 
-          # Determine if we need to bump PATCH, MINOR, or MAJOR
-          if [[ "${{ github.event_name }}" == "push" ]]; then
-            PATCH=$((PATCH+1))
-          elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            MINOR=$((MINOR+1))
-            PATCH=0
-          elif [[ "${{ github.event_name }}" == "release" ]]; then
+          # Determine version bump based on event or manual input
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            VERSION_TYPE="${{ github.event.inputs.version_type }}"
+          else
+            VERSION_TYPE="patch"
+          fi
+
+          if [[ "$VERSION_TYPE" == "major" ]]; then
             MAJOR=$((MAJOR+1))
             MINOR=0
             PATCH=0
+          elif [[ "$VERSION_TYPE" == "minor" ]]; then
+            MINOR=$((MINOR+1))
+            PATCH=0
+          else
+            PATCH=$((PATCH+1))
           fi
 
           NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
+
+          # Check for pre-release version (alpha, beta, rc)
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && -n "${{ github.event.inputs.pre_release_type }}" ]]; then
+            NEW_VERSION="${NEW_VERSION}-${{ github.event.inputs.pre_release_type }}.1"
+          fi
+
           echo "New version: $NEW_VERSION"
           echo "NEW_VERSION=${NEW_VERSION}" >> $GITHUB_ENV
 
