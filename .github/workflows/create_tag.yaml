@@ -20,16 +20,17 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      # Step 2: Set IMAGE_TAG for non-release events
+      # Step 2: Set IMAGE_TAG for non-release events (push to main)
       - name: Set IMAGE_TAG for non-release events
         if: github.event_name != 'pull_request' && github.event_name != 'release'
         shell: bash
         run: |
-          TEMP=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}
-          if [[ -z "$TEMP" || "$TEMP" == "refs/heads" ]]; then
-            TEMP="main"
+          # Extract branch name or fallback to 'main'
+          BRANCH_NAME=$(echo "${GITHUB_REF#refs/heads/}" | sed 's/refs\/heads\///')
+          if [[ -z "$BRANCH_NAME" ]]; then
+            BRANCH_NAME="main"
           fi
-          echo "IMAGE_TAG=${TEMP//\//-}-$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_ENV
+          echo "IMAGE_TAG=${BRANCH_NAME//\//-}-$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_ENV
 
       # Step 3: Set IMAGE_TAG with image_name (if provided)
       - name: Set IMAGE_TAG with image_name
