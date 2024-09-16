@@ -14,7 +14,7 @@ on:
 jobs:
   create-tag-and-deploy:
     runs-on: ubuntu-latest
-    
+
     steps:
       # Step 1: Checkout code
       - name: Checkout code
@@ -25,41 +25,33 @@ jobs:
         if: github.event_name != 'pull_request' && github.event_name != 'release'
         shell: bash
         run: |
-          # Extract branch name or fallback to 'main'
-          BRANCH_NAME=$(echo "${GITHUB_REF#refs/heads/}" | sed 's/refs\/heads\///')
+          # Extract branch name from GITHUB_REF and remove refs/heads/
+          BRANCH_NAME="${GITHUB_REF#refs/heads/}"
           if [[ -z "$BRANCH_NAME" ]]; then
             BRANCH_NAME="main"
           fi
           echo "IMAGE_TAG=${BRANCH_NAME//\//-}-$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_ENV
 
-      # Step 3: Set IMAGE_TAG with image_name (if provided)
-      - name: Set IMAGE_TAG with image_name
-        if: inputs.image_name != 'none' && github.event_name != 'pull_request' && github.event_name != 'release'
-        shell: bash
-        run: |
-          TEMP="${{ inputs.image_name }}-${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}"
-          echo "IMAGE_TAG=${TEMP//\//-}-$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_ENV
-
-      # Step 4: Set IMAGE_TAG (on pull_request event)
+      # Step 3: Set IMAGE_TAG (on pull_request event)
       - name: Set IMAGE_TAG (on pull_request event)
         if: github.event_name == 'pull_request'
         shell: bash
         run: |
-          TEMP=${{ github.event.pull_request.head.ref }}
-          echo "IMAGE_TAG=${TEMP//\//-}-$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_ENV
+          BRANCH_NAME="${{ github.event.pull_request.head.ref }}"
+          echo "IMAGE_TAG=${BRANCH_NAME//\//-}-$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_ENV
 
-      # Step 5: Set IMAGE_TAG (on release event)
+      # Step 4: Set IMAGE_TAG (on release event)
       - name: Set IMAGE_TAG (on release event)
         if: github.event_name == 'release'
         shell: bash
         run: |
           echo "IMAGE_TAG=release-${{ github.event.release.tag_name }}-$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_ENV
 
-      # Step 6: Debug IMAGE_TAG
+      # Step 5: Debug IMAGE_TAG
       - name: Debug IMAGE_TAG
         run: echo "IMAGE_TAG is $IMAGE_TAG"
-      
-      # Step 7: Create and push the tag
+
+      # Step 6: Create and push the tag
       - name: Create and push tag
         run: |
           git config --global user.email "github-actions@github.com"
