@@ -1,38 +1,47 @@
 name: Automated Tagging and Deployment
 
+# Trigger only for manual workflow dispatch
 on:
   workflow_dispatch:
 
+# Set permissions to allow pushing tags
 permissions:
-  contents: write
+  contents: write  # Grants write access to the repository's contents (necessary for pushing tags)
 
 jobs:
   create-tag-and-deploy:
     runs-on: ubuntu-latest
     
     steps:
+      # Step 1: Checkout code
       - name: Checkout code
         uses: actions/checkout@v2
 
+      # Step 2: Set IMAGE_TAG for manual dispatch (workflow_dispatch)
       - name: Set IMAGE_TAG
         shell: bash
         run: |
+          # Get the current timestamp in UTC (YYYYMMDD-HHMMSS format)
+          TIMESTAMP=$(date -u +'%Y%m%d-%H%M%S')
+          # Extract branch name from GITHUB_REF (removing refs/heads/)
           BRANCH_NAME="${GITHUB_REF#refs/heads/}"
           if [[ -z "$BRANCH_NAME" ]]; then
             BRANCH_NAME="manual"
           fi
-          # Format the tag as YYYYMMDD-HHMMSS-branchname
-          echo "IMAGE_TAG=$(date +'%Y%m%d-%H%M%S')-${BRANCH_NAME//\//-}" >> $GITHUB_ENV
+          # Format the tag with date-time and branch name
+          echo "IMAGE_TAG=${TIMESTAMP}-${BRANCH_NAME}" >> $GITHUB_ENV
 
+      # Step 3: Debug IMAGE_TAG
       - name: Debug IMAGE_TAG
         run: echo "IMAGE_TAG is $IMAGE_TAG"
 
+      # Step 4: Create and push the tag using GITHUB_TOKEN
       - name: Create and push tag
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Use the GitHub Actions token
         run: |
           git config --global user.email "github-actions@github.com"
           git config --global user.name "GitHub Actions"
           echo "Creating tag: $IMAGE_TAG"
-          git tag $IMAGE_TAG
-          git push https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }} $IMAGE_TAG
+          git tag "$IMAGE_TAG"
+          git push https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }} "$IMAGE_TAG"
