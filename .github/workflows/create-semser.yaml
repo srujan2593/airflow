@@ -1,0 +1,76 @@
+name: Automated Tagging and Deployment
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: write  # Allows pushing tags to the repository
+
+jobs:
+  create-tag-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      # Step 1: Checkout code
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      # Step 2: Get current version (based on existing tags)
+      - name: Get current version
+        id: get_version
+        run: |
+          TAG=$(git tag --sort=-v:refname | head -n 1)
+          if [ -z "$TAG" ]; then
+            echo "0.0.0"  # Default version if no tags are found
+            echo "CURRENT_VERSION=0.0.0" >> $GITHUB_ENV
+          else
+            echo "Current version: $TAG"
+            echo "CURRENT_VERSION=${TAG}" >> $GITHUB_ENV
+
+      # Step 3: Bump version based on event type
+      - name: Bump version based on event
+        id: bump_version
+        shell: bash
+        run: |
+          MAJOR=$(echo "${{ env.CURRENT_VERSION }}" | cut -d'.' -f1)
+          MINOR=$(echo "${{ env.CURRENT_VERSION }}" | cut -d'.' -f2)
+          PATCH=$(echo "${{ env.CURRENT_VERSION }}" | cut -d'.' -f3)
+
+          # Determine if we need to bump PATCH, MINOR, or MAJOR
+          if [[ "${{ github.event_name }}" == "push" ]]; then
+            PATCH=$((PATCH+1))
+          elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            MINOR=$((MINOR+1))
+            PATCH=0
+          elif [[ "${{ github.event_name }}" == "release" ]]; then
+            MAJOR=$((MAJOR+1))
+            MINOR=0
+            PATCH=0
+          fi
+
+          NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
+          echo "New version: $NEW_VERSION"
+          echo "NEW_VERSION=${NEW_VERSION}" >> $GITHUB_ENV
+
+      # Step 4: Debug new version
+      - name: Debug NEW_VERSION
+        run: echo "New version is $NEW_VERSION"
+
+      # Step 5: Create and push new version tag
+      - name: Create and push new version tag
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config --global user.email "github-actions@github.com"
+          git config --global user.name "GitHub Actions"
+          echo "Creating tag: v${NEW_VERSION}"
+          git tag "v${NEW_VERSION}"
+          git push https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }} "v${NEW_VERSION}"
