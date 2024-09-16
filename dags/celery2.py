@@ -30,7 +30,7 @@ default_args = {
 }
 
 with DAG(
-    'complex_task_workflow',
+    'complex_task_workflow_new',
     default_args=default_args,
     description='A DAG with multiple complex tasks to test CeleryExecutor.',
     schedule_interval=timedelta(days=1),
