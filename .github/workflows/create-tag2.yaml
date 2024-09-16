@@ -27,16 +27,17 @@ jobs:
       - name: Get current version
         id: get_version
         run: |
-          TAG=$(git describe --tags `git rev-list --tags --max-count=1`)
+          # Try to find the latest tag, if none exist, fallback to 0.0.0
+          TAG=$(git tag --sort=-v:refname | head -n 1)
           if [ -z "$TAG" ]; then
-            echo "0.0.0"  # Default version if no tags are found
+            echo "No tags found, defaulting to version 0.0.0"
             echo "CURRENT_VERSION=0.0.0" >> $GITHUB_ENV
           else
-            echo "Current version: $TAG"
+            echo "Found tag: $TAG"
             echo "CURRENT_VERSION=${TAG}" >> $GITHUB_ENV
           fi
 
-      # Step 3: Increment version based on event type
+      # Step 3: Bump version based on event type
       - name: Bump version based on event
         id: bump_version
         shell: bash
