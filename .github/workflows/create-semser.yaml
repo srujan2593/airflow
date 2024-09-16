@@ -27,13 +27,18 @@ jobs:
       - name: Get current version
         id: get_version
         run: |
-          TAG=$(git tag --sort=-v:refname | head -n 1)
-          if [ -z "$TAG" ]; then
-            echo "0.0.0"  # Default version if no tags are found
+            # Get the latest tag sorted by version number
+            TAG=$(git tag --sort=-v:refname | head -n 1)
+            
+            # If no tags are found, default to 0.0.0
+            if [ -z "$TAG" ]; then
+            echo "No tags found, defaulting to version 0.0.0"
             echo "CURRENT_VERSION=0.0.0" >> $GITHUB_ENV
-          else
-            echo "Current version: $TAG"
+            else
+            echo "Found tag: $TAG"
             echo "CURRENT_VERSION=${TAG}" >> $GITHUB_ENV
+            fi
+    
 
       # Step 3: Bump version based on event type
       - name: Bump version based on event
