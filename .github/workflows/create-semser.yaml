@@ -10,7 +10,6 @@ on:
   release:
     types: [published]
   workflow_dispatch:
-    
 
 permissions:
   contents: write  # Allows pushing tags to the repository
@@ -20,26 +19,28 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      # Step 1: Checkout code
+      # Step 1: Checkout code and fetch all tags
       - name: Checkout code
         uses: actions/checkout@v2
+        with:
+          fetch-depth: 0  # Ensure all tags and history are fetched
+          tags: true       # Ensure tags are fetched
 
       # Step 2: Get current version (based on existing tags)
       - name: Get current version
         id: get_version
         run: |
-            # Get the latest tag sorted by version number
-            TAG=$(git tag --sort=-v:refname | head -n 1)
-            
-            # If no tags are found, default to 0.0.0
-            if [ -z "$TAG" ]; then
+          # Get the latest tag sorted by version number
+          TAG=$(git tag --sort=-v:refname | head -n 1)
+          
+          # If no tags are found, default to 0.0.0
+          if [ -z "$TAG" ]; then
             echo "No tags found, defaulting to version 0.0.0"
             echo "CURRENT_VERSION=0.0.0" >> $GITHUB_ENV
-            else
+          else
             echo "Found tag: $TAG"
             echo "CURRENT_VERSION=${TAG}" >> $GITHUB_ENV
-            fi
-    
+          fi
 
       # Step 3: Bump version based on event type
       - name: Bump version based on event
