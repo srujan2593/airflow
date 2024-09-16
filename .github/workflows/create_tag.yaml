@@ -26,7 +26,7 @@ jobs:
         shell: bash
         run: |
           TEMP=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}
-          if [[ -z "$TEMP" ]]; then
+          if [[ -z "$TEMP" || "$TEMP" == "refs/heads" ]]; then
             TEMP="main"
           fi
           echo "IMAGE_TAG=${TEMP//\//-}-$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_ENV
@@ -66,10 +66,3 @@ jobs:
           echo "Creating tag: $IMAGE_TAG"
           git tag $IMAGE_TAG
           git push origin $IMAGE_TAG
-
-    # Uncomment below for deploying to Helm if necessary
-    # - name: Deploy to Dev
-    #   run: |
-    #     helm upgrade airflow-dev ./helm-chart \
-    #       --namespace airflow \
-    #       --set gitSync.rev
