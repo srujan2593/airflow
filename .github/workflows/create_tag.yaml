@@ -10,7 +10,6 @@ on:
   release:
     types: [published]
   workflow_dispatch:
-    
 
 jobs:
   create-tag-and-deploy:
@@ -21,14 +20,18 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      # Step 2: Set IMAGE_TAG for different event types
+      # Step 2: Set IMAGE_TAG for non-release events
       - name: Set IMAGE_TAG for non-release events
         if: github.event_name != 'pull_request' && github.event_name != 'release'
         shell: bash
         run: |
           TEMP=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}
+          if [[ -z "$TEMP" ]]; then
+            TEMP="main"
+          fi
           echo "IMAGE_TAG=${TEMP//\//-}-$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_ENV
 
+      # Step 3: Set IMAGE_TAG with image_name (if provided)
       - name: Set IMAGE_TAG with image_name
         if: inputs.image_name != 'none' && github.event_name != 'pull_request' && github.event_name != 'release'
         shell: bash
@@ -36,6 +39,7 @@ jobs:
           TEMP="${{ inputs.image_name }}-${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}"
           echo "IMAGE_TAG=${TEMP//\//-}-$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_ENV
 
+      # Step 4: Set IMAGE_TAG (on pull_request event)
       - name: Set IMAGE_TAG (on pull_request event)
         if: github.event_name == 'pull_request'
         shell: bash
@@ -43,15 +47,18 @@ jobs:
           TEMP=${{ github.event.pull_request.head.ref }}
           echo "IMAGE_TAG=${TEMP//\//-}-$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_ENV
 
+      # Step 5: Set IMAGE_TAG (on release event)
       - name: Set IMAGE_TAG (on release event)
         if: github.event_name == 'release'
         shell: bash
         run: |
           echo "IMAGE_TAG=release-${{ github.event.release.tag_name }}-$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_ENV
 
+      # Step 6: Debug IMAGE_TAG
       - name: Debug IMAGE_TAG
         run: echo "IMAGE_TAG is $IMAGE_TAG"
       
+      # Step 7: Create and push the tag
       - name: Create and push tag
         run: |
           git config --global user.email "github-actions@github.com"
@@ -60,14 +67,9 @@ jobs:
           git tag $IMAGE_TAG
           git push origin $IMAGE_TAG
 
-    
-
-    #   # Step 4: Update Helm values with the created tag for git-sync `rev` and deploy
-    #   - name: Deploy to Dev
-    #     run: |
-    #       helm upgrade airflow-dev ./helm-chart \
-    #         --namespace airflow \
-    #         --set gitSync.rev=$IMAGE_TAG \
-    #         --set gitSync.repo=https://github.com/your-org/airflow-dags.git
-
-    #   # Additional steps for QA, train, etc. can follow
+    # Uncomment below for deploying to Helm if necessary
+    # - name: Deploy to Dev
+    #   run: |
+    #     helm upgrade airflow-dev ./helm-chart \
+    #       --namespace airflow \
+    #       --set gitSync.rev
