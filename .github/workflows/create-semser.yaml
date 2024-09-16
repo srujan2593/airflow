@@ -23,7 +23,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
         with:
-          fetch-depth: 0  # Ensure all tags and history are fetched
+          fetch-depth: 0  # Ensure all history and tags are fetched
           tags: true       # Ensure tags are fetched
 
       # Step 2: Get current version (based on existing tags)
@@ -32,6 +32,11 @@ jobs:
         run: |
           # Get the latest tag sorted by version number
           TAG=$(git tag --sort=-v:refname | head -n 1)
+          
+          # Remove the 'v' prefix if it's present and ensure only one 'v' is added later
+          if [[ "$TAG" == v* ]]; then
+            TAG=${TAG:1}  # Remove the 'v'
+          fi
           
           # If no tags are found, default to 0.0.0
           if [ -z "$TAG" ]; then
@@ -78,6 +83,12 @@ jobs:
         run: |
           git config --global user.email "github-actions@github.com"
           git config --global user.name "GitHub Actions"
-          echo "Creating tag: v${NEW_VERSION}"
-          git tag "v${NEW_VERSION}"
-          git push https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }} "v${NEW_VERSION}"
+          
+          # Ensure only one 'v' is added to the tag
+          if git rev-parse "v${NEW_VERSION}" >/dev/null 2>&1; then
+            echo "Tag v${NEW_VERSION} already exists, skipping creation."
+          else
+            echo "Creating tag: v${NEW_VERSION}"
+            git tag "v${NEW_VERSION}"
+            git push https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }} "v${NEW_VERSION}"
+          fi
