@@ -3,6 +3,11 @@ name: Automated Tagging and Deployment
 # Trigger only for manual workflow dispatch
 on:
   workflow_dispatch:
+    inputs:
+      branch_name:
+        description: 'Branch name for the tag'
+        required: true
+        default: 'main'
 
 # Set permissions to allow pushing tags
 permissions:
@@ -21,13 +26,12 @@ jobs:
       - name: Set IMAGE_TAG
         shell: bash
         run: |
-          # Use main branch for the tag or any branch name if needed
-          BRANCH_NAME="${GITHUB_REF#refs/heads/}"
-          if [[ -z "$BRANCH_NAME" ]]; then
-            BRANCH_NAME="manual"
-          fi
-          # Format the tag as branchname-YYYYMMDD-HHMMSS
-          echo "IMAGE_TAG=${BRANCH_NAME//\//-}-$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_ENV
+          # Get the current timestamp in YYYYMMDD-HHMMSS format
+          TIMESTAMP=$(date +'%Y%m%d-%H%M%S')
+          # Get branch name from the manual input
+          BRANCH_NAME="${{ github.event.inputs.branch_name }}"
+          # Format the tag with date-time and branch name
+          echo "IMAGE_TAG=${TIMESTAMP}-${BRANCH_NAME}" >> $GITHUB_ENV
 
       # Step 3: Debug IMAGE_TAG
       - name: Debug IMAGE_TAG
@@ -41,5 +45,5 @@ jobs:
           git config --global user.email "github-actions@github.com"
           git config --global user.name "GitHub Actions"
           echo "Creating tag: $IMAGE_TAG"
-          git tag $IMAGE_TAG
-          git push https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }} $IMAGE_TAG
+          git tag "$IMAGE_TAG"
+          git push https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }} "$IMAGE_TAG"
