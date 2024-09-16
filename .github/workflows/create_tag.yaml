@@ -49,12 +49,17 @@ jobs:
         run: |
           echo "IMAGE_TAG=release-${{ github.event.release.tag_name }}-$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_ENV
 
-      - name: Create and push annotated tag
+      - name: Debug IMAGE_TAG
+        run: echo "IMAGE_TAG is $IMAGE_TAG"
+      
+      - name: Create and push tag
         run: |
-          git config --global user.email "srujan@github.com"
+          git config --global user.email "github-actions@github.com"
           git config --global user.name "GitHub Actions"
-          git tag -a $IMAGE_TAG -m "Tag created by GitHub Actions for deployment"
+          echo "Creating tag: $IMAGE_TAG"
+          git tag $IMAGE_TAG
           git push origin $IMAGE_TAG
+
     
 
     #   # Step 4: Update Helm values with the created tag for git-sync `rev` and deploy
