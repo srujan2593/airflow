@@ -1,5 +1,6 @@
 name: Automated Tagging and Deployment
 
+# Events that trigger the workflow
 on:
   push:
     branches:
@@ -11,10 +12,14 @@ on:
     types: [published]
   workflow_dispatch:
 
+# Set permissions to allow pushing tags
+permissions:
+  contents: write  # Grants write access to the repository's contents (necessary for pushing tags)
+
 jobs:
   create-tag-and-deploy:
     runs-on: ubuntu-latest
-
+    
     steps:
       # Step 1: Checkout code
       - name: Checkout code
@@ -30,6 +35,7 @@ jobs:
           if [[ -z "$BRANCH_NAME" ]]; then
             BRANCH_NAME="main"
           fi
+          # Format the tag as branchname-YYYYMMDD-HHMMSS
           echo "IMAGE_TAG=${BRANCH_NAME//\//-}-$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_ENV
 
       # Step 3: Set IMAGE_TAG (on pull_request event)
@@ -38,6 +44,7 @@ jobs:
         shell: bash
         run: |
           BRANCH_NAME="${{ github.event.pull_request.head.ref }}"
+          # Format the tag as branchname-YYYYMMDD-HHMMSS
           echo "IMAGE_TAG=${BRANCH_NAME//\//-}-$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_ENV
 
       # Step 4: Set IMAGE_TAG (on release event)
@@ -45,17 +52,20 @@ jobs:
         if: github.event_name == 'release'
         shell: bash
         run: |
+          # Format the tag as release-tagname-YYYYMMDD-HHMMSS
           echo "IMAGE_TAG=release-${{ github.event.release.tag_name }}-$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_ENV
 
       # Step 5: Debug IMAGE_TAG
       - name: Debug IMAGE_TAG
         run: echo "IMAGE_TAG is $IMAGE_TAG"
 
-      # Step 6: Create and push the tag
+      # Step 6: Create and push the tag using GITHUB_TOKEN
       - name: Create and push tag
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Use the GitHub Actions token
         run: |
           git config --global user.email "github-actions@github.com"
           git config --global user.name "GitHub Actions"
           echo "Creating tag: $IMAGE_TAG"
           git tag $IMAGE_TAG
-          git push origin $IMAGE_TAG
+          git push https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }} $IMAGE_TAG
