@@ -33,9 +33,7 @@ jobs:
         run: echo "IMAGE_TAG is $IMAGE_TAG"
 
       # Step 4: Create and push the tag using GITHUB_TOKEN
-      - name: Create and push tag
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Use the GitHub Actions token
+      - name: Create and push tag # Use the GitHub Actions token
         run: |
           echo "Creating tag: $IMAGE_TAG"
           git tag "$IMAGE_TAG"
