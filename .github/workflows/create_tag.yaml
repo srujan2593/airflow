@@ -21,14 +21,11 @@ jobs:
       - name: Set IMAGE_TAG
         shell: bash
         run: |
-          # Get the current timestamp in UTC (YYYYMMDD-HHMMSS format)
           TIMESTAMP=$(date -u +'%Y%m%d-%H%M%S')
-          # Extract branch name from GITHUB_REF (removing refs/heads/)
           BRANCH_NAME="${GITHUB_REF#refs/heads/}"
           if [[ -z "$BRANCH_NAME" ]]; then
-            BRANCH_NAME="manual"
+            echo "Warning: Unable to determine branch name. GITHUB_REF may be empty."
           fi
-          # Format the tag with date-time and branch name
           echo "IMAGE_TAG=${TIMESTAMP}-${BRANCH_NAME}" >> $GITHUB_ENV
 
       # Step 3: Debug IMAGE_TAG
@@ -40,8 +37,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Use the GitHub Actions token
         run: |
-          git config --global user.email "github-actions@github.com"
-          git config --global user.name "GitHub Actions"
           echo "Creating tag: $IMAGE_TAG"
           git tag "$IMAGE_TAG"
           git push https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }} "$IMAGE_TAG"
