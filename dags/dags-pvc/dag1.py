@@ -14,7 +14,7 @@ default_args = {
 }
 
 dag = DAG(
-    'simple_test_dag',
+    'pvc_simple_test_dag_1',
     default_args=default_args,
     description='A simple DAG for testing Airflow',
     schedule_interval=timedelta(days=1),
